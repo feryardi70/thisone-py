@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from scipy.ndimage import sobel, gaussian_filter
+from scipy.interpolate import interp1d
 from fastapi.responses import JSONResponse
 import streamlit as st
 import pydicom
