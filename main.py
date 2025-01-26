@@ -67,9 +67,9 @@ def calculate_mtf_10(pixel_array, pixel_size, start_x=148, start_y=273, crop_siz
     frequencies = frequencies[start_index:]
     mtf_values = mtf_values[start_index:]
 
-    # Find MTF 10% (0.1)
-    mtf_10_index = np.where(mtf_values <= 0.1)[0][0]
-    mtf_10_frequency = frequencies[mtf_10_index]
+    # Interpolate to find the frequency where MTF = 0.1
+    interp_func = interp1d(mtf_values, frequencies, kind='linear', fill_value="extrapolate")
+    mtf_10_frequency = interp_func(0.1)  # Frequency at MTF 10%
 
     # Plot MTF curve
     fig, ax = plt.subplots()
