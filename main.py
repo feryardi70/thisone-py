@@ -1,9 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Request, File, UploadFile
-from sqlalchemy.orm import Session
-from database import SessionLocal
-from modelDep import Departure
-from pydantic import BaseModel
-from typing import List
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from scipy.ndimage import sobel, gaussian_filter
 from fastapi.responses import JSONResponse
@@ -18,159 +13,21 @@ import base64
 app = FastAPI()
 
 origins = [
-    "http://localhost:5173",
+    "http://localhost:4321",
 ]
-
-# Dependency to get the database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-def parse_id(id: str | None) -> int:
-    """
-    Parse the `id` parameter to ensure it's a valid integer.
-    """
-    if id is None:
-        raise HTTPException(status_code=400, detail="ID is required")
-    try:
-        return int(id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="ID must be a valid integer")
-
-# Pydantic schema for responses
-class DepartureSchema(BaseModel):
-    id: int
-    airline: str
-    flight_number: str
-    destination: str
-    departure_date: str
-    departure_time: str
-    gate: str
-    remark: str
-
-    class Config:
-        from_attributes = True
-
-class DepartSchema(BaseModel):
-    airline: str
-    flight_number: str
-    destination: str
-    departure_date: str
-    departure_time: str
-    gate: str
-    remark: str
-
-    class Config:
-        from_attributes = True        
-
-class ResponseSchema(BaseModel):
-    message: str
-    data: List[DepartureSchema]
-
-class ResponseSingleSchema(BaseModel):
-    message: str
-    data: DepartureSchema
-
-class DeletionResponse(BaseModel):
-    message: str    
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_methods=["*"],
     allow_headers=["*"],
-)          
+)
 
 # root page
 @app.get("/")
 async def root():
     return {"message": "Hello from FastAPI"}
 # end root page
-
-# departure page start
-@app.get("/departure", response_model=ResponseSchema)
-async def departure_list(db: Session = Depends(get_db)):
-    try:
-        departures = db.query(Departure).all()
-        return {"message": "success", "data": departures}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred while fetching departures: {str(e)}")
-
-@app.post("/departure")
-async def save_departure(departure: DepartSchema, db: Session = Depends(get_db)):
-    try:
-        # Create a new departure record
-        new_departure = Departure(**departure.dict())
-        db.add(new_departure)
-        db.commit()
-        db.refresh(new_departure)
-        return {"message": "Departure saved successfully", "data": []}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to save departure: {str(e)}")
-
-@app.get("/departure/{id}", response_model=ResponseSingleSchema)
-async def get_departure(id: str | None , db: Session = Depends(get_db)):
-    # Parse and validate the ID
-    query_id = parse_id(id)
-
-    departure = db.query(Departure).filter(Departure.id == query_id).first()
-    if not departure:
-        raise HTTPException(status_code=404, detail="Departure data not found")
-    return {"message": "success", "data": departure}
-
-@app.put("/departure")
-async def update_departure(departure_data: DepartureSchema, db: Session = Depends(get_db)):
-    try:
-        # Fetch the departure record by ID
-        departure = db.query(Departure).filter(Departure.id == departure_data.id).first()
-        
-        if not departure:
-            raise HTTPException(status_code=404, detail="Departure not found")
-        
-        # Update fields
-        for key, value in departure_data.dict(exclude_unset=True).items():
-            setattr(departure, key, value)
-
-        # Commit changes to the database
-        db.commit()
-        db.refresh(departure)
-        
-        return {"message": "Update data success", "data": []}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to update departure: {str(e)}")
-
-@app.delete("/departure/{id}", response_model=DeletionResponse)
-async def delete_departure(id: str | None, db: Session = Depends(get_db)):
-    """
-    Delete a departure by ID.
-    """
-    try:
-        # Parse and validate the ID
-        query_id = parse_id(id)
-
-        # Fetch the departure record
-        departure = db.query(Departure).filter(Departure.id == query_id).first()
-
-        if not departure:
-            raise HTTPException(status_code=404, detail="Departure data not found")
-
-        # Delete the record
-        db.delete(departure)
-        db.commit()
-
-        # Return a success response
-        return {"message": "Deleted success"}
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
-# end departure route
 
 # mtf page
 def crop_at(image, start_x, start_y, crop_size=(64, 64)):

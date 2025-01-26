@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+scipy
+streamlit
+pydicom
+numpy
+matplotlib
+python-multipart
