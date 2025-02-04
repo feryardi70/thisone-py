@@ -15,6 +15,8 @@ app = FastAPI()
 
 origins = [
     "http://localhost:4321",
+    "ttps://thisone-d1-astro.pages.dev",
+
 ]
 
 app.add_middleware(
