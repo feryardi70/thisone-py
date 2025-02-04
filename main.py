@@ -15,7 +15,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:4321",
-    "ttps://thisone-d1-astro.pages.dev",
+    "https://thisone-d1-astro.pages.dev",
 
 ]
 
