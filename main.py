@@ -32,6 +32,12 @@ async def root():
     return {"message": "Hello from FastAPI"}
 # end root page
 
+# Health page
+@app.get("/health")
+async def root():
+    return {"message": "healthy"}
+# end Health page
+
 # mtf page
 def crop_at(image, start_x, start_y, crop_size=(64, 64)):
     """
